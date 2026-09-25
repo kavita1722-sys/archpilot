@@ -5,7 +5,7 @@ from app.agent.state import AgentState
 MAX_STEPS: int = 6
 MAX_TOOL_RETRIES: int = 2
 MAX_VALIDATION_RETRIES: int = 2
-MAX_ITERATIONS: int = 12
+MAX_ITERATIONS: int = 16
 
 
 def has_more_steps(state: AgentState) -> bool:
@@ -43,3 +43,19 @@ def can_retry_validation(state: AgentState) -> bool:
     retries = state.get("validation_retries", 0)
     max_retries = state.get("max_validation_retries", MAX_VALIDATION_RETRIES)
     return retries < max_retries
+
+
+def needs_research_retry(state: AgentState) -> bool:
+    """Determine whether a research retry is warranted and permitted."""
+    validation = state.get("validation")
+    if not validation:
+        return False
+
+    is_insufficient = (
+        validation.get("status") == "insufficient"
+        or validation.get("is_valid") is False
+        or validation.get("evidence_coverage", 1.0) < 0.8
+    )
+
+    return is_insufficient and can_retry_validation(state) and not is_iteration_limit_exceeded(state)
+

@@ -23,8 +23,7 @@ COPY app/ ./app/
 COPY ui/ ./ui/
 COPY scripts/ ./scripts/
 COPY docs/ ./docs/
-COPY tests/ ./tests/
-COPY .env.example .env ./
+COPY .env.example ./
 
 # Install project package
 RUN pip install -e .

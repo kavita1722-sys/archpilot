@@ -1,11 +1,19 @@
-"""Data access repository for runs, steps, events, and results."""
+"""Data access repository for runs, steps, events, evidence, decisions, and reports."""
 
 import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
-from app.db.models import ExecutionEventModel, RunModel, StepModel, ToolEventModel
+from app.db.models import (
+    DecisionModel,
+    EvidenceModel,
+    ExecutionEventModel,
+    FinalReportModel,
+    RunModel,
+    StepModel,
+    ToolEventModel,
+)
 
 
 class RunRepository:
@@ -231,3 +239,112 @@ class RunRepository:
             .order_by(ToolEventModel.timestamp.asc())
             .all()
         )
+
+    # ---------------- Phase 2 Additions: Evidence & Decisions ----------------
+
+    def add_evidence(
+        self,
+        run_id: str,
+        evidence_id: str,
+        title: str,
+        url: str,
+        source_type: str,
+        claim: str,
+        excerpt: str,
+        relevance: float = 0.9,
+        confidence: float = 0.85,
+        status: str = "verified",
+    ) -> EvidenceModel:
+        """Persist an item into the Evidence Ledger."""
+        item = EvidenceModel(
+            id=str(uuid.uuid4()),
+            run_id=run_id,
+            evidence_id=evidence_id,
+            title=title,
+            url=url,
+            source_type=source_type,
+            claim=claim,
+            excerpt=excerpt,
+            relevance=relevance,
+            confidence=confidence,
+            status=status,
+            retrieved_at=self._now(),
+        )
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
+
+    def get_evidence_for_run(self, run_id: str) -> List[EvidenceModel]:
+        """Fetch all evidence items collected for a run."""
+        return (
+            self.db.query(EvidenceModel)
+            .filter(EvidenceModel.run_id == run_id)
+            .order_by(EvidenceModel.evidence_id.asc())
+            .all()
+        )
+
+    def count_evidence(self) -> int:
+        """Count total evidence items stored in the ledger."""
+        return self.db.query(EvidenceModel).count()
+
+    def add_decision(
+        self,
+        run_id: str,
+        decision_id: str,
+        question: str,
+        recommendation: str,
+        supporting_evidence_ids: List[str],
+        constraints_addressed: List[str],
+        tradeoffs: List[str],
+        assumptions: List[str],
+        confidence: float = 0.85,
+    ) -> DecisionModel:
+        """Persist an item into the Decision Ledger."""
+        decision = DecisionModel(
+            id=str(uuid.uuid4()),
+            run_id=run_id,
+            decision_id=decision_id,
+            question=question,
+            recommendation=recommendation,
+            supporting_evidence_ids_json=json.dumps(supporting_evidence_ids),
+            constraints_addressed_json=json.dumps(constraints_addressed),
+            tradeoffs_json=json.dumps(tradeoffs),
+            assumptions_json=json.dumps(assumptions),
+            confidence=confidence,
+            created_at=self._now(),
+        )
+        self.db.add(decision)
+        self.db.commit()
+        self.db.refresh(decision)
+        return decision
+
+    def get_decisions_for_run(self, run_id: str) -> List[DecisionModel]:
+        """Fetch all architectural decisions for a run."""
+        return (
+            self.db.query(DecisionModel)
+            .filter(DecisionModel.run_id == run_id)
+            .order_by(DecisionModel.decision_id.asc())
+            .all()
+        )
+
+    def save_final_report(
+        self,
+        run_id: str,
+        report_dict: Dict[str, Any],
+        confidence: float = 0.9,
+        evidence_coverage: float = 0.9,
+    ) -> FinalReportModel:
+        """Persist structured final engineering report."""
+        report = FinalReportModel(
+            id=str(uuid.uuid4()),
+            run_id=run_id,
+            report_json=json.dumps(report_dict),
+            confidence=confidence,
+            evidence_coverage=evidence_coverage,
+            created_at=self._now(),
+        )
+        self.db.add(report)
+        self.db.commit()
+        self.db.refresh(report)
+        return report

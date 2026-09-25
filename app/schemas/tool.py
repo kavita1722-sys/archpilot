@@ -14,6 +14,38 @@ class CalculatorInput(BaseModel):
     )
 
 
+class SearchResultItem(BaseModel):
+    """Normalized search result item."""
+
+    title: str = Field(..., description="Title of the search result.")
+    url: str = Field(..., description="Canonical URL.")
+    snippet: str = Field(..., description="Extracted relevant text summary.")
+    source: str = Field(default="web", description="Origin provider or domain.")
+
+
+class WebSearchInput(BaseModel):
+    """Input schema for web search tool."""
+
+    query: str = Field(..., description="Technical query string.", min_length=2)
+    max_results: int = Field(default=5, ge=1, le=10, description="Max results to return.")
+
+
+class UrlFetchInput(BaseModel):
+    """Input schema for URL fetch tool."""
+
+    url: str = Field(..., description="Web or documentation URL to inspect.")
+
+
+class UrlFetchOutput(BaseModel):
+    """Structured extraction from a fetched URL."""
+
+    url: str
+    title: str
+    content: str
+    content_length: int
+    truncated: bool = False
+
+
 class ToolCall(BaseModel):
     """Represents an agent's request to invoke a specific tool."""
 
@@ -32,3 +64,4 @@ class ToolResult(BaseModel):
     duration_ms: float
     status: Literal["success", "error"]
     error: Optional[str] = None
+

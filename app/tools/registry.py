@@ -5,8 +5,11 @@ from app.core.config import get_settings
 from app.core.errors import ToolNotAllowedException
 from app.core.logging import logger
 from app.schemas.tool import ToolResult
-from app.tools.base import BaseTool
 from app.tools.calculator import CalculatorTool
+
+from app.tools.base import BaseTool
+from app.tools.url_fetch import UrlFetchTool
+from app.tools.web_search import WebSearchTool
 
 
 class ToolRegistry:
@@ -75,4 +78,7 @@ def get_default_registry() -> ToolRegistry:
     """Create and configure the default ToolRegistry with baseline tools."""
     registry = ToolRegistry()
     registry.register(CalculatorTool())
+    registry.register(WebSearchTool())
+    registry.register(UrlFetchTool())
     return registry
+

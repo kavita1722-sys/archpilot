@@ -101,10 +101,41 @@ class RunService:
                     error=payload.get("error"),
                     step_id=step_id,
                 )
+            elif event_type == EventType.EVIDENCE_COLLECTED:
+                self.repo.add_evidence(
+                    run_id=ev_run_id,
+                    evidence_id=payload.get("id") or payload.get("evidence_id", f"EV-{uuid.uuid4().hex[:4]}"),
+                    title=payload.get("title", ""),
+                    url=payload.get("url", ""),
+                    source_type=payload.get("source_type", "web"),
+                    claim=payload.get("claim", ""),
+                    excerpt=payload.get("excerpt", ""),
+                    relevance=float(payload.get("relevance", 0.9)),
+                    confidence=float(payload.get("confidence", 0.85)),
+                    status=payload.get("status", "verified"),
+                )
+            elif event_type == EventType.DECISION_RECORDED:
+                self.repo.add_decision(
+                    run_id=ev_run_id,
+                    decision_id=payload.get("id") or payload.get("decision_id", f"DEC-{uuid.uuid4().hex[:4]}"),
+                    question=payload.get("question", ""),
+                    recommendation=payload.get("recommendation", ""),
+                    supporting_evidence_ids=payload.get("supporting_evidence_ids", []),
+                    constraints_addressed=payload.get("constraints_addressed", []),
+                    tradeoffs=payload.get("tradeoffs", []),
+                    assumptions=payload.get("assumptions", []),
+                    confidence=float(payload.get("confidence", 0.85)),
+                )
             elif event_type == EventType.VALIDATION_COMPLETED:
                 self.repo.update_run_validation(ev_run_id, payload)
             elif event_type == EventType.FINALIZED:
                 self.repo.update_run_final_result(ev_run_id, payload)
+                self.repo.save_final_report(
+                    run_id=ev_run_id,
+                    report_dict=payload,
+                    confidence=float(payload.get("confidence", 0.9)),
+                    evidence_coverage=float(payload.get("evidence_coverage", 0.9)),
+                )
 
         app_graph = create_agent_graph(
             llm=self.llm,
@@ -123,7 +154,11 @@ class RunService:
             "observations": [],
             "tool_events": [],
             "calculations": [],
+            "evidence": [],
+            "decisions": [],
+            "research_queue": [],
             "validation": None,
+            "validation_attempts": 0,
             "final_result": None,
             "iteration": 0,
             "max_iterations": self.settings.MAX_ITERATIONS,
@@ -231,15 +266,57 @@ class RunService:
             for r in runs
         ]
 
+    def get_run_evidence(self, run_id: str) -> List[Dict[str, Any]]:
+        """Fetch all evidence items in the Evidence Ledger for a run."""
+        items = self.repo.get_evidence_for_run(run_id)
+        return [
+            {
+                "id": it.id,
+                "evidence_id": it.evidence_id,
+                "title": it.title,
+                "url": it.url,
+                "source_type": it.source_type,
+                "claim": it.claim,
+                "excerpt": it.excerpt,
+                "relevance": it.relevance,
+                "confidence": it.confidence,
+                "status": it.status,
+                "retrieved_at": it.retrieved_at.isoformat() if it.retrieved_at else None,
+            }
+            for it in items
+        ]
+
+    def get_run_decisions(self, run_id: str) -> List[Dict[str, Any]]:
+        """Fetch all architectural decisions in the Decision Ledger for a run."""
+        decisions = self.repo.get_decisions_for_run(run_id)
+        return [
+            {
+                "id": d.id,
+                "decision_id": d.decision_id,
+                "question": d.question,
+                "recommendation": d.recommendation,
+                "supporting_evidence_ids": json.loads(d.supporting_evidence_ids_json or "[]"),
+                "constraints_addressed": json.loads(d.constraints_addressed_json or "[]"),
+                "tradeoffs": json.loads(d.tradeoffs_json or "[]"),
+                "assumptions": json.loads(d.assumptions_json or "[]"),
+                "confidence": d.confidence,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+            }
+            for d in decisions
+        ]
+
     def get_dashboard_metrics(self) -> Dict[str, int]:
         """Aggregate high-level system metrics for the dashboard."""
         total = self.repo.count_runs()
         completed = self.repo.count_runs_by_status("COMPLETED")
         active = self.repo.count_runs_by_status("RUNNING") + self.repo.count_runs_by_status("PENDING")
         tool_calls = self.repo.count_tool_events()
+        total_evidence = self.repo.count_evidence()
         return {
             "total_runs": total,
             "completed_runs": completed,
             "active_runs": active,
             "tool_calls": tool_calls,
+            "total_evidence": total_evidence,
         }
+

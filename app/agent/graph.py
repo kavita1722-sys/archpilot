@@ -3,7 +3,11 @@
 from typing import Any, Callable, Dict, Literal, Optional
 from langgraph.graph import END, START, StateGraph
 from app.agent.nodes import NodeHandler
-from app.agent.policies import has_more_steps, is_iteration_limit_exceeded
+from app.agent.policies import (
+    has_more_steps,
+    is_iteration_limit_exceeded,
+    needs_research_retry,
+)
 from app.agent.state import AgentState
 from app.core.logging import logger
 from app.llm.base import LLMProvider
@@ -24,10 +28,23 @@ def route_after_observe(state: AgentState) -> Literal["select_next_step", "valid
         logger.warning("Iteration limit reached; routing directly to validate.")
         return "validate"
 
+    # If research step just completed, return to validate
+    if state.get("validation_retries", 0) > 0 and not state.get("research_queue"):
+        # We just observed the outcome of a research retry
+        return "validate"
+
     if has_more_steps(state):
         return "select_next_step"
 
     return "validate"
+
+
+def route_after_validate(state: AgentState) -> Literal["research_step", "finalize"]:
+    """Bounded research loop: if validation is insufficient and retries remain, do research."""
+    if needs_research_retry(state):
+        logger.info("Validation identified missing evidence; dispatching bounded research step.")
+        return "research_step"
+    return "finalize"
 
 
 def create_agent_graph(
@@ -35,7 +52,7 @@ def create_agent_graph(
     tools: ToolRegistry,
     event_callback: Optional[Callable[[str, EventType, Dict[str, Any], Optional[int]], None]] = None,
 ):
-    """Construct and compile the ArchPilot LangGraph workflow.
+    """Construct and compile the ArchPilot LangGraph workflow with Bounded Research Loop.
 
     Args:
         llm: LLMProvider instance.
@@ -55,9 +72,10 @@ def create_agent_graph(
     workflow.add_node("execute_tool", handler.execute_tool)
     workflow.add_node("observe", handler.observe)
     workflow.add_node("validate", handler.validate)
+    workflow.add_node("research_step", handler.research_step)
     workflow.add_node("finalize", handler.finalize)
 
-    # Connect edges
+    # Connect initial edges
     workflow.add_edge(START, "normalize_task")
     workflow.add_edge("normalize_task", "plan")
     workflow.add_edge("plan", "select_next_step")
@@ -75,7 +93,7 @@ def create_agent_graph(
     # Edge from tool execution to observation
     workflow.add_edge("execute_tool", "observe")
 
-    # Conditional edge from observe: loop or proceed to validation
+    # Conditional edge from observe: loop to next step or proceed to validate
     workflow.add_conditional_edges(
         "observe",
         route_after_observe,
@@ -85,8 +103,20 @@ def create_agent_graph(
         },
     )
 
-    # Validation -> Finalize -> END
-    workflow.add_edge("validate", "finalize")
+    # Conditional edge from validate: bounded research retry or finalize
+    workflow.add_conditional_edges(
+        "validate",
+        route_after_validate,
+        {
+            "research_step": "research_step",
+            "finalize": "finalize",
+        },
+    )
+
+    # Edge from research_step back to execute_tool
+    workflow.add_edge("research_step", "execute_tool")
+
+    # Finalize -> END
     workflow.add_edge("finalize", END)
 
     return workflow.compile()

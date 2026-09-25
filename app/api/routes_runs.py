@@ -142,6 +142,44 @@ async def get_run_result(
 
 
 @router.get(
+    "/runs/{run_id}/evidence",
+    summary="Get Evidence Ledger items for a run",
+    status_code=status.HTTP_200_OK,
+)
+async def get_run_evidence(
+    run_id: str,
+    service: RunService = Depends(get_run_service),
+) -> List[Dict[str, Any]]:
+    """Retrieve all evidence collected and verified in the Evidence Ledger."""
+    run_data = service.get_run(run_id)
+    if not run_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run '{run_id}' not found.",
+        )
+    return service.get_run_evidence(run_id)
+
+
+@router.get(
+    "/runs/{run_id}/decisions",
+    summary="Get Decision Ledger items for a run",
+    status_code=status.HTTP_200_OK,
+)
+async def get_run_decisions(
+    run_id: str,
+    service: RunService = Depends(get_run_service),
+) -> List[Dict[str, Any]]:
+    """Retrieve all structured architectural decisions from the Decision Ledger."""
+    run_data = service.get_run(run_id)
+    if not run_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run '{run_id}' not found.",
+        )
+    return service.get_run_decisions(run_id)
+
+
+@router.get(
     "/runs",
     summary="List recent engineering runs",
     status_code=status.HTTP_200_OK,

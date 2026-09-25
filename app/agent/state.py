@@ -26,9 +26,13 @@ class AgentState(TypedDict, total=False):
     observations: List[str]
     tool_events: List[Dict[str, Any]]
     calculations: List[Dict[str, Any]]
+    evidence: List[Dict[str, Any]]      # Evidence Ledger items
+    decisions: List[Dict[str, Any]]     # Decision Ledger items
+    research_queue: List[Dict[str, Any]] # Dynamic bounded research steps
 
     # Quality and validation
     validation: Optional[Dict[str, Any]]
+    validation_attempts: int
 
     # Final engineering synthesis
     final_result: Optional[Dict[str, Any]]

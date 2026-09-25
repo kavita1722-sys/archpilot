@@ -1,6 +1,4 @@
-"""Schemas for chronological audit events during agent execution."""
-
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
@@ -16,8 +14,12 @@ class EventType(str, Enum):
     TOOL_CALLED = "TOOL_CALLED"
     TOOL_COMPLETED = "TOOL_COMPLETED"
     OBSERVATION_ADDED = "OBSERVATION_ADDED"
+    EVIDENCE_COLLECTED = "EVIDENCE_COLLECTED"
+    DECISION_RECORDED = "DECISION_RECORDED"
     STEP_COMPLETED = "STEP_COMPLETED"
     VALIDATION_COMPLETED = "VALIDATION_COMPLETED"
+    VALIDATION_FAILED_RETRY = "VALIDATION_FAILED_RETRY"
+    RESEARCH_STARTED = "RESEARCH_STARTED"
     FINALIZED = "FINALIZED"
     RUN_FAILED = "RUN_FAILED"
 
@@ -33,5 +35,6 @@ class ExecutionEvent(BaseModel):
         default_factory=dict, description="Metadata or structured data associated with event."
     )
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="UTC timestamp of the event."
+        default_factory=lambda: datetime.now(timezone.utc), description="UTC timestamp of the event."
     )
+

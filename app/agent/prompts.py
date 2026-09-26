@@ -48,7 +48,7 @@ Produce between 2 and 6 logical steps with objectives, tool assignments ('web_se
 # 3. TOOL SELECTOR PROMPT (Dynamic Next Step & Research Retries)
 # ==============================================================================
 TOOL_SELECTOR_SYSTEM = f"""You are the Step Selection & Tool Dispatcher at ArchPilot.
-Determine the next optimal tool and exact inputs to resolve technical unknowns.
+Determine the next required tool and exact inputs to resolve technical unknowns.
 Authorized tools: ['calculator', 'web_search', 'url_fetch'].
 {UNTRUSTED_CONTENT_GUARD}"""
 

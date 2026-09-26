@@ -43,6 +43,8 @@ def is_safe_ip(ip_str: str) -> Tuple[bool, Optional[str]]:
         return False, f"Reserved IP address '{ip_str}' is forbidden."
     if str(ip) in ("0.0.0.0", "::"):
         return False, f"Unspecified address '{ip_str}' is forbidden."
+    if str(ip) in ("169.254.169.254", "100.100.100.200") or ip in ipaddress.ip_network("100.64.0.0/10"):
+        return False, f"Cloud metadata / shared CGNAT address '{ip_str}' is forbidden (SSRF defense)."
 
     return True, None
 
@@ -73,8 +75,14 @@ def validate_url_safety(url_str: str) -> Tuple[bool, Optional[str]]:
     if not hostname:
         return False, "URL must contain a valid hostname."
 
-    # 2. Localhost name check
-    if hostname == "localhost" or hostname.endswith(".localhost"):
+    # 2. Localhost and cloud metadata hostname check
+    if (
+        hostname == "localhost"
+        or hostname.endswith(".localhost")
+        or hostname in ("metadata.google.internal", "metadata", "instance-data")
+        or hostname.endswith(".internal")
+        or hostname.endswith(".local")
+    ):
         return False, f"Target hostname '{hostname}' is rejected (SSRF defense)."
 
     # 3. Resolve DNS and inspect all target IPs

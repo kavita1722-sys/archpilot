@@ -111,7 +111,7 @@ class MockLLMProvider(LLMProvider):
                         objective="Research vector database memory footprint and scalar quantization benchmarks.",
                         tool="web_search",
                         inputs={"query": "qdrant memory requirements 1536 dimension vector index scalar quantization", "max_results": 4},
-                        success_criteria="Empirical memory scaling and quantization benchmarks retrieved.",
+                        success_criteria="Published vector memory scaling and scalar quantization benchmark documentation retrieved.",
                         status=StepStatus.PENDING,
                     ),
                     PlanStep(
@@ -124,7 +124,7 @@ class MockLLMProvider(LLMProvider):
                     ),
                     PlanStep(
                         id=3,
-                        objective="Fetch official Qdrant scalar quantization technical documentation for empirical compression ratio.",
+                        objective="Fetch official Qdrant scalar quantization technical documentation for published compression ratio.",
                         tool="url_fetch",
                         inputs={"url": "https://qdrant.tech/documentation/guides/quantization/"},
                         success_criteria="Verified scalar quantization memory reduction ratio and recall metrics.",
@@ -295,10 +295,11 @@ class MockLLMProvider(LLMProvider):
                     executive_summary=(
                         "[Mock LLM Mode / Simulated Scenario]: A self-hosted, private VPC architecture "
                         "coupling Qdrant (with int8 scalar quantization) and vLLM (serving quantized open-weights models) "
-                        "optimally resolves the 100,000 PDF RAG requirement. This topology satisfies strict data privacy "
-                        "with zero external data egress, is capacity-modeled to sustain 20 concurrent users at sub-300ms retrieval latency, "
-                        "and bounds estimated monthly cloud spend to ~$410/month based on stated pricing assumptions—slashing "
-                        "projected costs by 65% compared to commercial managed alternatives. "
+                        "addresses the 100,000 PDF RAG requirements under modeled parameters. This topology satisfies strict data privacy "
+                        "with zero external data egress, is capacity-modeled for 20 concurrent users (estimated ~2.0 peak QPS) with "
+                        "capacity-modeled retrieval performance under the stated assumptions; no live latency benchmark was executed, "
+                        "and provides an estimated monthly infrastructure spend of approximately $410/month based on stated pricing assumptions; "
+                        "actual production cost depends on workload and provider pricing. "
                         "(Note: Generated under LLM_PROVIDER=mock using simulated benchmark fixtures and sizing models; not a live empirical benchmark)."
                     ),
                     problem_definition=(
@@ -475,8 +476,8 @@ class MockLLMProvider(LLMProvider):
                         "   - vLLM serving Llama-3.1-8B-Instruct AWQ (4-bit) on 1x NVIDIA A10G (24 GB VRAM).\n"
                         "   - 100% private VPC network isolation; zero data egress to public endpoints.\n\n"
                         "3. **Capacity & Cost**:\n"
-                        "   - Sized to sustain 20 concurrent users (2.0 peak QPS theoretical estimate) at sub-300ms retrieval latency based on capacity modeling.\n"
-                        "   - Monthly infrastructure estimated at ~$410/month on 1-year savings plan based on AWS pricing assumptions."
+                        "   - Capacity-modeled for 20 concurrent users (2.0 peak QPS theoretical estimate) with capacity-modeled retrieval performance under the stated assumptions; no live latency benchmark was executed.\n"
+                        "   - Estimated monthly infrastructure spend of approximately $410/month based on stated pricing assumptions; actual production cost depends on workload and provider pricing."
                     ),
                     decision_trace=[
                         {
@@ -596,7 +597,7 @@ class MockLLMProvider(LLMProvider):
                         "constraint": "1-year retention SLA, 3x replication durability",
                         "evidence": "13.64 TB daily ingest * 365 days * 3 replicas = 14,935.8 TB (estimate based on stated sizing assumptions)",
                         "calculation": "13.64 * 365 * 3 = 14935.8",
-                        "trade_off": "Higher initial cloud cost vs. guaranteed data resilience",
+                        "trade_off": "Higher initial cloud cost vs. high-durability multi-zone data resilience",
                     },
                 ],
             )

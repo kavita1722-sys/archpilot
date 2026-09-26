@@ -63,3 +63,33 @@ async def test_mock_llm_generate_validation_and_result():
     assert len(res.calculations) > 0
     assert len(res.trade_offs) > 0
     assert len(res.decision_trace) > 0
+
+
+def test_llm_factory_instantiation():
+    """Verify get_llm_provider instantiates correct classes for mock, ollama, and openai_compatible."""
+    from app.core.config import Settings
+    from app.llm.factory import get_llm_provider
+    from app.llm.ollama import OllamaProvider
+    from app.llm.openai_provider import OpenAICompatibleProvider
+
+    mock_prov = get_llm_provider(Settings(LLM_PROVIDER="mock"))
+    assert isinstance(mock_prov, MockLLMProvider)
+
+    ollama_prov = get_llm_provider(Settings(LLM_PROVIDER="ollama"))
+    assert isinstance(ollama_prov, OllamaProvider)
+    assert ollama_prov.base_url == "http://localhost:11434"
+    assert ollama_prov.model == "llama3.2:latest"
+
+    openai_prov = get_llm_provider(
+        Settings(
+            LLM_PROVIDER="openai_compatible",
+            OPENAI_API_KEY="test-key",
+            OPENAI_BASE_URL="https://custom.llm.endpoint/v1",
+            OPENAI_MODEL="deepseek-chat",
+        )
+    )
+    assert isinstance(openai_prov, OpenAICompatibleProvider)
+    assert openai_prov.api_key == "test-key"
+    assert openai_prov.base_url == "https://custom.llm.endpoint/v1"
+    assert openai_prov.model == "deepseek-chat"
+

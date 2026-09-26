@@ -88,9 +88,23 @@ class OpenAICompatibleProvider(LLMProvider):
                 response.raise_for_status()
                 data = response.json()
                 raw_text = data["choices"][0]["message"]["content"].strip()
+
+                # Clean markdown backticks if returned
+                if raw_text.startswith("```"):
+                    lines = raw_text.splitlines()
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].startswith("```"):
+                        lines = lines[:-1]
+                    raw_text = "\n".join(lines).strip()
+
                 parsed = json.loads(raw_text)
                 return schema.model_validate(parsed)
         except httpx.TimeoutException as e:
             raise LLMTimeoutException(f"OpenAI request timed out: {e}")
+        except json.JSONDecodeError as e:
+            raise LLMInvalidOutputException(
+                f"Failed to parse OpenAI JSON output: {e}. Raw response: {raw_text[:200]}"
+            )
         except Exception as e:
             raise LLMInvalidOutputException(f"OpenAI structured parse error: {e}")

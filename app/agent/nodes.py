@@ -108,7 +108,7 @@ class NodeHandler:
             normalized_task=normalized.get("normalized_task", state.get("task")),
             domain=normalized.get("domain", "General Engineering"),
             key_variables=normalized.get("key_variables", []),
-            target_metric=normalized.get("target_metric", "Optimal Architecture"),
+            target_metric=normalized.get("target_metric", "Recommended Architecture"),
             constraints=state.get("constraints", {}),
         )
 
@@ -469,7 +469,7 @@ class NodeHandler:
             "objective": f"Targeted research to fill validation gap: {query[:60]}",
             "tool": "web_search",
             "inputs": {"query": query, "max_results": 4},
-            "success_criteria": "Acquire empirical evidence for missing constraints.",
+            "success_criteria": "Acquire verified external documentation or published benchmark evidence for missing constraints.",
             "status": StepStatus.PENDING.value,
         }
 

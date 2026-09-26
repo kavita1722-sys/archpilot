@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for ArchPilot Backend & Frontend
 
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package definitions and install dependencies
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE ./
 RUN pip install --upgrade pip && \
     pip install ".[dev]"
 

@@ -69,6 +69,22 @@ def test_is_safe_ip_link_local_and_zero():
     assert safe is False
     assert "forbidden" in reason.lower()
 
+    # Cloud metadata / CGNAT IP
+    safe, reason = is_safe_ip("100.100.100.200")
+    assert safe is False
+    assert "metadata" in reason.lower() or "forbidden" in reason.lower()
+
+
+def test_reject_cloud_metadata_hostnames():
+    """Verify validate_url_safety rejects cloud metadata hostnames."""
+    safe, reason = validate_url_safety("http://metadata.google.internal/computeMetadata/v1")
+    assert safe is False
+    assert "rejected" in reason.lower()
+
+    safe, reason = validate_url_safety("http://instance-data/latest/meta-data/")
+    assert safe is False
+    assert "rejected" in reason.lower()
+
 
 def test_url_fetch_tool_rejects_ssrf_via_execute():
     """Verify UrlFetchTool rejects SSRF attacks and returns an error without raising."""

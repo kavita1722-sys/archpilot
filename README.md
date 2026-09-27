@@ -245,6 +245,14 @@ OPENAI_BASE_URL="http://localhost:8000/v1"
 OPENAI_MODEL="meta-llama/Llama-3.1-8B-Instruct"
 ```
 
+## LLM Provider Disclosure
+
+ArchPilot supports multiple provider modes through its LLM abstraction, including local Ollama and OpenAI-compatible providers.
+
+The demonstrated live LLM execution was performed locally using Ollama with Qwen 2.5:7B. No paid API is required for the demonstrated live execution.
+
+For deterministic testing and Docker Compose startup, the default configuration uses the Mock LLM provider. The Docker health/readiness check may therefore report `llm_provider: mock`.
+
 ---
 
 ## 10. Running the Application

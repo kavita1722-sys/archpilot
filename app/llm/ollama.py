@@ -57,9 +57,10 @@ class OllamaProvider(LLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.1,
     ) -> T:
-        """Call Ollama with format='json' and validate response against Pydantic schema."""
+        """Call Ollama with format=schema.model_json_schema() and validate response against Pydantic schema."""
         url = f"{self.base_url}/api/generate"
-        schema_json = json.dumps(schema.model_json_schema())
+        schema_dict = schema.model_json_schema()
+        schema_json = json.dumps(schema_dict)
         enhanced_prompt = (
             f"{prompt}\n\n"
             f"You MUST output raw valid JSON matching this JSON Schema:\n{schema_json}\n"
@@ -70,7 +71,7 @@ class OllamaProvider(LLMProvider):
             "model": self.model,
             "prompt": enhanced_prompt,
             "system": system or "You are an expert systems engineer. Output strictly raw JSON.",
-            "format": "json",
+            "format": schema_dict,
             "stream": False,
             "options": {"temperature": temperature},
         }
